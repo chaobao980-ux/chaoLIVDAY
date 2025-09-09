@@ -24,20 +24,23 @@
       width: 100%;
       height: 100%;
       border-radius: 50%;
-      border: 8px solid #388e3c;
+      border: 12px solid;
+      box-shadow: 0 6px 15px rgba(0,0,0,0.25); /* ✅ 陰影立體感 */
       transition: transform 5s cubic-bezier(0.25, 0.1, 0.25, 1);
     }
+    /* 🔻 修正箭頭位置，避免擋標題 */
     #pointer {
       position: absolute;
-      top: -30px;
+      top: 0px; /* ✅ 緊貼轉盤，不擋標題 */
       left: 50%;
       transform: translateX(-50%);
       width: 0;
       height: 0;
       border-left: 25px solid transparent;
       border-right: 25px solid transparent;
-      border-bottom: 50px solid #e53935;
+      border-top: 50px solid #e53935; /* ✅ 朝下 */
       z-index: 10;
+      filter: drop-shadow(0px 3px 3px rgba(0,0,0,0.3)); /* 陰影效果 */
     }
     button {
       margin: 10px;
@@ -126,11 +129,11 @@
       {name: "漢堡飲料兌換券", qty: 64},
       {name: "35元飲料兌換券", qty: 136},
       {name: "套餐50元折抵券", qty: 100},
-      {name: "薯條兌換券", qty: 100},
+      {name: "薯條電子兌換券", qty: 100},
       {name: "95折券(QR下載出示)", qty: 500},
       {name: "10元折價券", qty: 1000}
     ];
-    let prizes = JSON.parse(JSON.stringify(initialPrizes));
+    let prizes = JSON.parse(JSON.stringify(initialPrizes)); // 複製一份
 
     let canvas = document.getElementById("wheel");
     let ctx = canvas.getContext("2d");
@@ -218,18 +221,17 @@
       let num = prizes.length;
       let arc = 360 / num;
       let extraSpins = Math.floor(Math.random() * 6) + 3; // 隨機 3~8 圈
-      let stopAngle = (360 - (selectedIndex * arc + arc/2)) + (360 * extraSpins);
+      // ✅ 修正箭頭方向
+      let stopAngle = (selectedIndex * arc + arc/2) + (360 * extraSpins);
 
       spinning = true;
 
-      // 先清掉動畫設定
+      // **清掉動畫，重置狀態**
       canvas.style.transition = "none";
       canvas.style.transform = `rotate(0deg)`;
+      void canvas.offsetWidth; // 觸發重繪
 
-      // 觸發重繪
-      void canvas.offsetWidth;
-
-      // 設定新的動畫
+      // **重新設定動畫**
       canvas.style.transition = "transform 5s cubic-bezier(0.25, 0.1, 0.25, 1)";
       canvas.style.transform = `rotate(${stopAngle}deg)`;
 
