@@ -130,7 +130,7 @@
       {name: "95折券(QR下載出示)", qty: 500},
       {name: "10元折價券", qty: 1000}
     ];
-    let prizes = JSON.parse(JSON.stringify(initialPrizes)); // 複製一份
+    let prizes = JSON.parse(JSON.stringify(initialPrizes));
 
     let canvas = document.getElementById("wheel");
     let ctx = canvas.getContext("2d");
@@ -217,9 +217,19 @@
 
       let num = prizes.length;
       let arc = 360 / num;
-      let stopAngle = (360 - (selectedIndex * arc + arc/2)) + (360*5); // 至少轉5圈
+      let extraSpins = Math.floor(Math.random() * 6) + 3; // 隨機 3~8 圈
+      let stopAngle = (360 - (selectedIndex * arc + arc/2)) + (360 * extraSpins);
+
       spinning = true;
 
+      // 先清掉動畫設定
+      canvas.style.transition = "none";
+      canvas.style.transform = `rotate(0deg)`;
+
+      // 觸發重繪
+      void canvas.offsetWidth;
+
+      // 設定新的動畫
       canvas.style.transition = "transform 5s cubic-bezier(0.25, 0.1, 0.25, 1)";
       canvas.style.transform = `rotate(${stopAngle}deg)`;
 
