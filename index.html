@@ -24,23 +24,36 @@
       width: 100%;
       height: 100%;
       border-radius: 50%;
-      border: 12px solid;
-      box-shadow: 0 6px 15px rgba(0,0,0,0.25); /* ✅ 陰影立體感 */
-      transition: transform 5s cubic-bezier(0.25, 0.1, 0.25, 1);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.25);
     }
-    /* 🔻 修正箭頭位置，避免擋標題 */
+    /* 指針：三角形 + 中心圓形 */
     #pointer {
       position: absolute;
-      top: 0px; /* ✅ 緊貼轉盤，不擋標題 */
+      top: 50%;
       left: 50%;
-      transform: translateX(-50%);
       width: 0;
       height: 0;
       border-left: 25px solid transparent;
       border-right: 25px solid transparent;
-      border-top: 50px solid #e53935; /* ✅ 朝下 */
+      border-bottom: 50px solid #e53935;
+      transform-origin: bottom center;
+      transform: translate(-50%, -100%) rotate(0deg);
+      transition: transform 5s cubic-bezier(0.25, 0.1, 0.25, 1);
       z-index: 10;
-      filter: drop-shadow(0px 3px 3px rgba(0,0,0,0.3)); /* 陰影效果 */
+    }
+    #pointer::after {
+      content: "";
+      position: absolute;
+      bottom: -15px;
+      left: -15px;
+      width: 30px;
+      height: 30px;
+      background: #e53935;
+      border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .buttons {
+      margin-top: 15px;
     }
     button {
       margin: 10px;
@@ -55,11 +68,18 @@
     button:hover {
       background: #388e3c;
     }
-    #result {
+    .result-area {
       margin-top: 20px;
-      font-size: 22px;
+    }
+    #result {
+      font-size: 26px;
       font-weight: bold;
-      color: #1b5e20;
+      color: #ffffff;
+      background: #43a047;
+      display: inline-block;
+      padding: 10px 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     }
     #remaining {
       margin-top: 10px;
@@ -101,15 +121,22 @@
 <body>
   <h1>🍔 漢堡大轉盤抽獎 🍟</h1>
   <div class="container">
-    <div id="pointer"></div>
     <canvas id="wheel"></canvas>
+    <div id="pointer"></div>
   </div>
-  <button onclick="spin()">抽獎</button>
-  <button onclick="resetPrizes()">重製獎項</button>
-  <p id="result"></p>
-  <p id="remaining"></p>
 
-  <!-- 獎品表格 -->
+  <!-- 按鈕 -->
+  <div class="buttons">
+    <button onclick="spin()">抽獎</button>
+    <button onclick="resetPrizes()">重製獎項</button>
+  </div>
+
+  <!-- 結果 -->
+  <div class="result-area">
+    <p id="result"></p>
+    <p id="remaining"></p>
+  </div>
+
   <table id="prizeTable">
     <thead>
       <tr>
@@ -122,18 +149,17 @@
   </table>
 
   <script>
-    // 初始獎品數量
     const initialPrizes = [
       {name: "漢堡抱枕", qty: 20},
       {name: "漢堡鑰匙圈", qty: 80},
       {name: "漢堡飲料兌換券", qty: 64},
       {name: "35元飲料兌換券", qty: 136},
       {name: "套餐50元折抵券", qty: 100},
-      {name: "薯條電子兌換券", qty: 100},
+      {name: "薯條兌換券", qty: 100},
       {name: "95折券(QR下載出示)", qty: 500},
       {name: "10元折價券", qty: 1000}
     ];
-    let prizes = JSON.parse(JSON.stringify(initialPrizes)); // 複製一份
+    let prizes = JSON.parse(JSON.stringify(initialPrizes));
 
     let canvas = document.getElementById("wheel");
     let ctx = canvas.getContext("2d");
@@ -154,15 +180,18 @@
         ctx.beginPath();
         ctx.fillStyle = colors[i % colors.length];
         ctx.moveTo(size/2, size/2);
-        ctx.arc(size/2, size/2, size/2-5, i*arc, (i+1)*arc);
+        ctx.arc(size/2, size/2, size/2-5, i*arc - Math.PI/2, (i+1)*arc - Math.PI/2);
         ctx.fill();
+
         ctx.save();
         ctx.translate(size/2, size/2);
-        ctx.rotate(i*arc + arc/2);
-        ctx.textAlign = "right";
+        ctx.rotate(i*arc + arc/2 - Math.PI/2);
+        ctx.textAlign = "center";
         ctx.fillStyle = "#1b5e20";
-        ctx.font = "15px Microsoft JhengHei";
-        ctx.fillText(prizes[i].name, size/2 - 20, 5);
+        ctx.font = "bold 16px Microsoft JhengHei";
+
+        let textRadius = size / 3; // 調整文字位置到圓盤內
+        ctx.fillText(prizes[i].name, textRadius, 8);
         ctx.restore();
       }
     }
@@ -205,7 +234,6 @@
         return;
       }
 
-      // 隨機挑選獎品
       let totalQty = available.reduce((sum, p) => sum + p.qty, 0);
       let rand = Math.floor(Math.random() * totalQty);
       let cumulative = 0;
@@ -220,31 +248,27 @@
 
       let num = prizes.length;
       let arc = 360 / num;
-      let extraSpins = Math.floor(Math.random() * 6) + 3; // 隨機 3~8 圈
-      // ✅ 修正箭頭方向
+      let extraSpins = Math.floor(Math.random() * 6) + 3;
       let stopAngle = (selectedIndex * arc + arc/2) + (360 * extraSpins);
 
       spinning = true;
+      let pointer = document.getElementById("pointer");
+      pointer.style.transition = "none";
+      pointer.style.transform = "translate(-50%, -100%) rotate(0deg)";
+      void pointer.offsetWidth;
 
-      // **清掉動畫，重置狀態**
-      canvas.style.transition = "none";
-      canvas.style.transform = `rotate(0deg)`;
-      void canvas.offsetWidth; // 觸發重繪
-
-      // **重新設定動畫**
-      canvas.style.transition = "transform 5s cubic-bezier(0.25, 0.1, 0.25, 1)";
-      canvas.style.transform = `rotate(${stopAngle}deg)`;
+      pointer.style.transition = "transform 5s cubic-bezier(0.25, 0.1, 0.25, 1)";
+      pointer.style.transform = `translate(-50%, -100%) rotate(${stopAngle}deg)`;
 
       setTimeout(() => {
         prizes[selectedIndex].qty--;
-        document.getElementById("result").innerText = "🎁 恭喜抽中：" + prizes[selectedIndex].name;
+        document.getElementById("result").innerHTML = `🎉 恭喜抽中 <b>${prizes[selectedIndex].name}</b>！`;
         spinning = false;
         drawWheel();
         updateTable();
       }, 5200);
     }
 
-    // 初始化
     drawWheel();
     updateTable();
   </script>
